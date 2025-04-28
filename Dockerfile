@@ -3,8 +3,10 @@ FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Copy only package files first to leverage caching
+# Copy package files and configuration files first
 COPY package*.json ./
+COPY tsconfig*.json ./
+COPY vite.config.ts ./
 
 # Install dependencies
 RUN npm install
