@@ -60,7 +60,7 @@ RUN npm run build
 # ----------- Stage 2: Serve with Nginx ----------- #
 FROM nginx:alpine
 
-# Remove default Nginx static files if any
+# Remove default Nginx static files
 RUN rm -rf /usr/share/nginx/html/*
 
 # Copy built app from builder
@@ -69,7 +69,11 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom Nginx config for SPA routing support
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose the port the app runs on
+# Set proper permissions
+RUN chown -R nginx:nginx /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html
+
+# Expose port 80
 EXPOSE 80
 
 # Start Nginx
