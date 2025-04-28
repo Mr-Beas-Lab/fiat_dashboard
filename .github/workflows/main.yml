@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
 jobs:
   build-and-deploy-dashboard:
     runs-on: ubuntu-latest
@@ -57,10 +59,27 @@ jobs:
             }
 
             echo "⬇️ Pulling latest dashboard image..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest || {
+              echo "❌ Failed to pull latest image"
+              exit 1
+            }
 
             echo "🔁 Restarting dashboard container..."
-            docker-compose up -d dashboard
+            docker-compose up -d dashboard || {
+              echo "❌ Failed to restart dashboard container"
+              exit 1
+            }
 
-            echo "✅ Dashboard deployed!"
+            # Wait for container to be healthy
+            echo "⏳ Waiting for dashboard to be healthy..."
+            for i in {1..30}; do
+              if curl -s http://localhost:80 > /dev/null; then
+                echo "✅ Dashboard is healthy!"
+                exit 0
+              fi
+              sleep 2
+            done
+
+            echo "❌ Dashboard failed health check"
+            exit 1
           EOF
