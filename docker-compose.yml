@@ -68,6 +68,7 @@ services:
       LETSENCRYPT_ENABLED: "true"
       LETSENCRYPT_HOST: wam.mrbeas.net
       LETSENCRYPT_EMAIL: millionmulugeta09@gmail.com
+      VIRTUAL_PROTO: https
     volumes:
       - ./dashboard/build:/usr/share/nginx/html
     restart: unless-stopped
