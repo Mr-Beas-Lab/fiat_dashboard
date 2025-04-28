@@ -60,24 +60,26 @@ services:
   mrb_backend:
     container_name: mrb_backend
     image: millionmulugeta/mrb_backend:latest
-    env_file: .env
+    env_file:
+      - .env
     environment:
-      - NODE_ENV=production
-      - PORT=80
-      - VIRTUAL_HOST=dashboard-backend.mrbeas.net
-      - VIRTUAL_PORT=80
-      - LETSENCRYPT_HOST=dashboard-backend.mrbeas.net
-      - LETSENCRYPT_EMAIL=millionmulugeta09@gmail.com
-    volumes:
-      - ./mrb_backend:/app
-      - /app/node_modules
+      NODE_ENV: production
+      PORT: 80
+      VIRTUAL_HOST: dashboard-backend.mrbeas.net
+      VIRTUAL_PORT: 80
+      LETSENCRYPT_ENABLED: "true"
+      LETSENCRYPT_HOST: dashboard-backend.mrbeas.net
+      LETSENCRYPT_EMAIL: millionmulugeta09@gmail.com
+      TRUST_PROXY: "1"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/api/system/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
     networks:
       - backend-network
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost"]
-      interval: 30s
-      retries: 3
 
   mini_app:
     container_name: mini_app
