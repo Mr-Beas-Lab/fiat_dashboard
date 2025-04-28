@@ -69,9 +69,19 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 # Copy custom Nginx config for SPA routing support
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 
+# Debug: List files and permissions
+RUN ls -la /usr/share/nginx/html && \
+    ls -la /etc/nginx/conf.d/
+
 # Set proper permissions
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
-    chmod -R 755 /usr/share/nginx/html
+    chmod -R 755 /usr/share/nginx/html && \
+    chown nginx:nginx /etc/nginx/conf.d/default.conf && \
+    chmod 644 /etc/nginx/conf.d/default.conf
+
+# Debug: Verify permissions
+RUN ls -la /usr/share/nginx/html && \
+    ls -la /etc/nginx/conf.d/
 
 # Expose port 80
 EXPOSE 80
