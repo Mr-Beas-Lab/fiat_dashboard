@@ -30,6 +30,9 @@ RUN echo "VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}" > .env && \
     echo "VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}" >> .env && \
     echo "VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}" >> .env
 
+# Verify Firebase config is present
+RUN ls -la src/firebase/firebaseConfig.ts
+
 # Build the app
 RUN npm run build
 
