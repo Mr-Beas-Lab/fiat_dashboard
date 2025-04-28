@@ -16,14 +16,12 @@ import {
 } from "../components/ui/select";
 import countries from "../lib/countries.json"; 
 import { registerAmbassador } from "../api/auth";
-import ApiErrorAlert from "../components/ui/ApiErrorAlert";
 import { Link } from "react-router-dom";
 
 export default function AmbassadorRegister() {
   const router = useNavigate();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [apiError, setApiError] = useState({ visible: false, message: "" });
   const [showLoginLink, setShowLoginLink] = useState(false);
 
   // Form data
@@ -130,9 +128,6 @@ export default function AmbassadorRegister() {
       return;
     }
 
-    // Reset API error
-    setApiError({ visible: false, message: "" });
-
     try {
       setIsSubmitting(true);
 
@@ -198,19 +193,11 @@ export default function AmbassadorRegister() {
         setShowLoginLink(true);
         
         // Don't show the API error for email-exists
-        setApiError({ visible: false, message: "" });
       } else if (error.error === "invalid-data") {
         // Show specific field error if possible
         setErrors((prev) => ({ ...prev, email: "Please check your information and try again." }));
-        
-        // Don't show the API error for field validation issues
-        setApiError({ visible: false, message: "" });
       } else if (error.error === "network-error" || error.error === "unexpected-response") {
         // Generic connection errors should show in the API error alert
-        setApiError({
-          visible: true,
-          message: "We're having trouble connecting to our services. Please try again later."
-        });
       } else if (error.error === "validation-error") {
         // Extract field name from validation error message
         const errorMessage = error.message || "";
@@ -237,19 +224,10 @@ export default function AmbassadorRegister() {
         
         // Only show API error if no field errors were found
         if (!foundFieldError) {
-          setApiError({
-            visible: true,
-            message: "There was a problem with your registration. Please check your information and try again."
-          });
         } else {
-          setApiError({ visible: false, message: "" });
         }
       } else {
         // Generic error for unexpected issues
-        setApiError({
-          visible: true,
-          message: error.message || "Something went wrong. Please try again later."
-        });
       }
     } finally {
       setIsSubmitting(false);
@@ -291,15 +269,6 @@ export default function AmbassadorRegister() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* API Error Alert - Only show for general/connection errors */}
-          {apiError.visible && (
-            <div className="bg-red-900 border border-red-700 text-white px-4 py-3 rounded mb-6">
-              <div className="flex items-center justify-between">
-                <span>{apiError.message}</span>
-              </div>
-            </div>
-          )}
-          
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="firstName" className="text-white">First Name</Label>

@@ -1,13 +1,13 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
-import apiClient from "../api/apiClient";
+import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
 // Define AuthUser type
 interface AuthUser {
   uid: string;
-  email: string | null;
+  email: string;
   role: "admin" | "ambassador" | "superadmin";
   firstName?: string;
   lastName?: string;
+  accessToken?: string;
 }
 
 // Define AuthContext type
@@ -49,7 +49,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             email: user.email,
             role: role,
             firstName: user.firstName,
-            lastName: user.lastName
+            lastName: user.lastName,
+            accessToken: token
           });
         } else {
           setCurrentUser(null);
@@ -67,8 +68,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const logout = async () => {
     try {
-      // No logout endpoint mentioned in the documentation, so we'll just clear local storage
-      
       // Clear localStorage
       localStorage.removeItem('accessToken');
       localStorage.removeItem('refreshToken');

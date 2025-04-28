@@ -16,9 +16,9 @@ const Navbar = () => {
 
   useEffect(() => {
     const checkKYCStatus = async () => {
-      if (isAmbassador && currentUser?.id) {
+      if (isAmbassador && currentUser?.uid) {
         try {
-          const kycDocRef = doc(db, "kycApplication", currentUser.id);
+          const kycDocRef = doc(db, "kycApplication", currentUser.uid);
           const kycDoc = await getDoc(kycDocRef);
           
           if (kycDoc.exists()) {
@@ -36,7 +36,7 @@ const Navbar = () => {
     };
 
     checkKYCStatus();
-  }, [currentUser?.id, isAmbassador]);
+  }, [currentUser?.uid, isAmbassador]);
 
   return (
     <nav className="bg-(--color-primary) p-4">

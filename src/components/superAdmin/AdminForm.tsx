@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Eye, EyeOff, ArrowLeft } from 'lucide-react';
 import { AdminData } from '../../api/adminService';
 import { getAdminById, createAdmin, updateAdmin } from '../../api/adminService';

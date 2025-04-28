@@ -25,43 +25,38 @@ const LoginForm: React.FC<LoginFormProps> = memo(({ onSuccess }) => {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
-    setLoading(true, 'Signing in...');
-  
+    setLoading(true);
+    setError('');
+
     try {
       const response = await login({ email, password });
-      
-      if (response.error) {
-        throw response;
-      }
-      
       if (!response.uid || !response.accessToken) {
-        throw { message: 'Server returned an invalid response format' };
+        throw new Error('Invalid response from server');
       }
-      
-      localStorage.setItem('accessToken', response.accessToken);
-      
+
       const userData = {
         uid: response.uid,
         email: response.email,
         role: response.role as "admin" | "ambassador" | "superadmin",
-        firstName: response.firstName || '',
-        lastName: response.lastName || ''
+        firstName: '',
+        lastName: '',
+        accessToken: response.accessToken
       };
-      
-      localStorage.setItem('user', JSON.stringify(userData));
+
       setCurrentUser(userData);
-      
-      toast.success('Login successful!');
-      onSuccess?.();
-    } catch (error: any) {
-      const errorMessage = error.message || 'An unexpected error occurred';
+      toast.success('Login successful');
+      if (onSuccess) {
+        onSuccess();
+      }
+      navigate('/dashboard');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'An error occurred during login';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
-  }, [email, password, setCurrentUser, setLoading, onSuccess]);
+  }, [email, password, setCurrentUser, setLoading, navigate, onSuccess]);
 
   const togglePasswordVisibility = useCallback(() => {
     setShowPassword(prev => !prev);

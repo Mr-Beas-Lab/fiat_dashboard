@@ -22,7 +22,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { KYCApplication } from "../../types";
 import SubmitMessage from "./SubmitMessage";
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import countries from "../../lib/countries.json"; 
@@ -277,33 +276,6 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
     return isValid;
   };
 
-  const validateIdVerification = () => {
-    const newErrors: Record<string, string | null> = {};
-    let isValid = true;
-
-    if (!idFrontFile && !idFrontPreview) {
-      newErrors.idFront = "Front side of ID is required";
-      isValid = false;
-    }
-
-    if (!idBackFile && !idBackPreview) {
-      newErrors.idBack = "Back side of ID is required";
-      isValid = false;
-    }
-
-    setErrors((prev) => ({ ...prev, ...newErrors }));
-    
-    if (!isValid) {
-      toast({
-        title: "Missing documents",
-        description: "Please upload both sides of your ID document",
-        variant: "destructive"
-      });
-    }
-    
-    return isValid;
-  };
-
   const handleNextStep = () => {
     if (activeTab === "personal") {
       const isValid = validatePersonalInfo();
@@ -321,25 +293,8 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-
-    // Clear previous submit error
-    setErrors(prev => ({ ...prev, submit: null }));
-
-    const isPersonalValid = validatePersonalInfo();
-    const isIdValid = validateIdVerification();
-
-    if (!isPersonalValid) {
-      setActiveTab("personal");
-      return;
-    }
-
-    if (!isIdValid) {
-      setActiveTab("verification");
-      return;
-    }
-
     try {
       setIsSubmitting(true);
 
@@ -359,22 +314,8 @@ export default function KYCForm({ ambassadorId }: KYCFormProps) {
       }
 
       // Check if token is still valid or needs refresh
-      try {
-        const idToken = await user.getIdToken(true);
-        console.log("Generated fresh ID token for submission");
-      } catch (tokenError) {
-        console.error("Failed to get ID token:", tokenError);
-        toast({
-          title: "Session Expired",
-          description: "Your login session has expired. Please log in again.",
-          variant: "destructive"
-        });
-        // Redirect to login after a small delay
-        setTimeout(() => {
-          window.location.href = '/login';
-        }, 2000);
-        return;
-      }
+      await user.getIdToken(true);
+      console.log("Generated fresh ID token for submission");
 
       // CRITICAL: Validate that ambassadorId matches the current user's UID
       if (ambassadorId !== user.uid) {

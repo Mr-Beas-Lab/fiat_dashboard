@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { verifyRole } from '../api/authService';
+import { ApiError } from '../types';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -53,19 +54,20 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
               await logout();
               setIsAuthorized(false);
             }
-          } catch (apiError) {
+          } catch (apiError: unknown) {
             // Only log out if it's an authorization error, not a network error
-            if (apiError.error === 'unauthorized') {
-              console.error('API verified user is unauthorized:', apiError);
+            const error = apiError as ApiError;
+            if (error.error === 'unauthorized') {
+              console.error('API verified user is unauthorized:', error);
               await logout();
               setIsAuthorized(false);
-            } else if (apiError.error === 'network-error') {
+            } else if (error.error === 'network-error') {
               // For network errors, log a warning but keep user authorized based on local data
-              console.warn('Role verification network error, maintaining local authorization:', apiError);
+              console.warn('Role verification network error, maintaining local authorization:', error);
               // Don't change isAuthorized - keep whatever it was set to earlier
             } else {
               // For other errors, also keep local authorization but log it
-              console.warn('Role verification API error, maintaining local authorization:', apiError);
+              console.warn('Role verification API error, maintaining local authorization:', error);
             }
           }
         } else {

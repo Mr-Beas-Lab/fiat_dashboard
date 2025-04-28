@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import { memo } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { LoadingProvider } from "./context/LoadingContext";
@@ -32,7 +32,7 @@ const App = () => {
         <Router>
           <div className="min-h-screen bg-black text-white">
             <LoadingSpinner fullScreen />
-            <Toaster position="top-right" richColors />
+            <Toaster />
             <Navbar />
             <Routes>
               {/* Public routes */}

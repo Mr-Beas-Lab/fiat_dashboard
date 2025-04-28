@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Pencil, Trash, Loader2, Check, X, Undo } from 'lucide-react';
+import { ArrowLeft, Pencil, Trash, Loader2, Check, X } from 'lucide-react';
 import { Button } from '../ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
 import { Badge } from '../../components/ui/badge';
 import { getAdminById, deactivateAdmin, activateAdmin, deleteAdmin } from '../../api/adminService';
 import { AdminData } from '../../api/adminService';

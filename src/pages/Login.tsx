@@ -2,7 +2,6 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import LoginForm from "../components/LoginForm";
 import { useAuth } from "../context/AuthContext";
-import apiClient from "../api/apiClient";
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();

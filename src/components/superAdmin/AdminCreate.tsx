@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -6,90 +6,97 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '../ui/form';
 import { Input } from '../ui/input';
-import { Checkbox } from '../ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { Switch } from '../ui/switch';
 import { createAdmin } from '../../api/adminService';
-import { toast } from '../../components/ui/use-toast';
+import { toast } from 'sonner';
+import { ApiErrorAlert } from '../ui/ApiErrorAlert';
+import type { AdminData } from '../../api/adminService';
 
 const formSchema = z.object({
-  firstName: z.string().min(2, {
-    message: "First name must be at least 2 characters.",
-  }),
-  lastName: z.string().min(2, {
-    message: "Last name must be at least 2 characters.",
-  }),
-  email: z.string().email({
-    message: "Please enter a valid email address.",
-  }),
-  password: z.string().min(8, {
-    message: "Password must be at least 8 characters.",
-  }).regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/, {
-    message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.",
-  }),
-  isActive: z.boolean().default(true),
+  email: z.string().email('Invalid email address'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
+  role: z.enum(['admin', 'ambassador']),
+  isActive: z.boolean()
 });
 
 type FormValues = z.infer<typeof formSchema>;
 
 const AdminCreate = () => {
   const navigate = useNavigate();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      firstName: "",
-      lastName: "",
-      email: "",
-      password: "",
+      email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
+      role: 'admin',
       isActive: true,
     },
   });
 
-  const onSubmit = async (values: FormValues) => {
-    setIsSubmitting(true);
+  const onSubmit = async (data: FormValues) => {
     try {
-      await createAdmin(values);
-      toast({
-        title: "Admin created successfully",
-        description: "The new admin user has been created.",
-        variant: "default",
-      });
-      navigate('/superadmin-dashboard/admins');
-    } catch (error) {
-      console.error('Error creating admin:', error);
-      toast({
-        title: "Failed to create admin",
-        description: "There was an error creating the admin user. Please try again.",
-        variant: "destructive",
-      });
+      setIsLoading(true);
+      setError(null);
+      
+      const adminData: AdminData = {
+        ...data,
+        isActive: true,
+      };
+      
+      await createAdmin(adminData);
+      toast.success('Admin created successfully');
+      navigate('/super-admin/admins');
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create admin';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
-      setIsSubmitting(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <Card className="bg-black border-gray-800 text-white">
+    <div className="container mx-auto p-4 max-w-2xl">
+      <Card className="bg-black border-gray-800">
         <CardHeader>
-          <div className="flex items-center mb-2">
+          <div className="flex items-center space-x-4">
             <Button
               variant="ghost"
-              size="sm"
-              onClick={() => navigate('/superadmin-dashboard/admins')}
-              className="mr-2 text-white hover:bg-gray-800"
+              size="icon"
+              onClick={() => navigate('/super-admin/admins')}
+              className="text-white hover:bg-gray-800"
             >
-              <ArrowLeft className="h-4 w-4 mr-1" />
-              Back
+              <ArrowLeft className="h-4 w-4" />
             </Button>
+            <div>
+              <CardTitle className="text-2xl text-white">Create New Admin</CardTitle>
+              <CardDescription className="text-gray-400">
+                Add a new administrator to the system
+              </CardDescription>
+            </div>
           </div>
-          <CardTitle className="text-2xl text-white">Create New Admin</CardTitle>
-          <CardDescription className="text-gray-400">
-            Add a new administrator to the system
-          </CardDescription>
         </CardHeader>
         <CardContent>
+          {error && (
+            <div className="mb-4">
+              <ApiErrorAlert message={error} isVisible={true} />
+            </div>
+          )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -103,10 +110,10 @@ const AdminCreate = () => {
                         <Input 
                           placeholder="John" 
                           {...field} 
-                          className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500" 
+                          className="bg-gray-900 border-gray-700 text-white"
                         />
                       </FormControl>
-                      <FormMessage className="text-red-400" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -120,10 +127,10 @@ const AdminCreate = () => {
                         <Input 
                           placeholder="Doe" 
                           {...field} 
-                          className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500" 
+                          className="bg-gray-900 border-gray-700 text-white"
                         />
                       </FormControl>
-                      <FormMessage className="text-red-400" />
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -137,13 +144,13 @@ const AdminCreate = () => {
                     <FormLabel className="text-white">Email</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="john.doe@example.com" 
                         type="email" 
+                        placeholder="john@example.com" 
                         {...field} 
-                        className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500" 
+                        className="bg-gray-900 border-gray-700 text-white"
                       />
                     </FormControl>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -156,17 +163,35 @@ const AdminCreate = () => {
                     <FormLabel className="text-white">Password</FormLabel>
                     <FormControl>
                       <Input 
-                        placeholder="••••••••" 
                         type="password" 
+                        placeholder="••••••••" 
                         {...field} 
-                        className="bg-gray-900 border-gray-700 text-white placeholder:text-gray-500" 
+                        className="bg-gray-900 border-gray-700 text-white"
                       />
                     </FormControl>
-                    <FormDescription className="text-gray-400">
-                      Password must be at least 8 characters with one uppercase, one lowercase, 
-                      one number, and one special character.
-                    </FormDescription>
-                    <FormMessage className="text-red-400" />
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-white">Role</FormLabel>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="bg-gray-900 border-gray-700 text-white">
+                          <SelectValue placeholder="Select a role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="ambassador">Ambassador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -175,42 +200,39 @@ const AdminCreate = () => {
                 control={form.control}
                 name="isActive"
                 render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border border-gray-800 p-4">
+                  <FormItem className="flex flex-row items-center justify-between rounded-lg border border-gray-700 p-4">
+                    <div className="space-y-0.5">
+                      <FormLabel className="text-base text-white">Active Status</FormLabel>
+                      <div className="text-sm text-gray-400">
+                        Whether this admin account should be active
+                      </div>
+                    </div>
                     <FormControl>
-                      <Checkbox
+                      <Switch
                         checked={field.value}
                         onCheckedChange={field.onChange}
-                        className="data-[state=checked]:bg-green-600 data-[state=checked]:border-green-600"
                       />
                     </FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel className="text-white">
-                        Active Status
-                      </FormLabel>
-                      <FormDescription className="text-gray-400">
-                        Enable this to make the admin account active immediately.
-                      </FormDescription>
-                    </div>
                   </FormItem>
                 )}
               />
 
-              <div className="flex justify-end">
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => navigate('/superadmin-dashboard/admins')}
-                  className="mr-2 border-gray-700 text-white hover:bg-gray-800"
-                  disabled={isSubmitting}
+              <div className="flex justify-end space-x-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => navigate('/super-admin/admins')}
+                  className="border-gray-700 text-white hover:bg-gray-800"
+                  disabled={isLoading}
                 >
                   Cancel
                 </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting}
-                  className="bg-gray-800 text-white hover:bg-gray-700"
+                <Button
+                  type="submit"
+                  className="bg-primary hover:bg-primary/90"
+                  disabled={isLoading}
                 >
-                  {isSubmitting ? (
+                  {isLoading ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Creating...

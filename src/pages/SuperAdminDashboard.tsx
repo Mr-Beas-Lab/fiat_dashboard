@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { Routes, Route, Link, useNavigate, useLocation, useParams } from 'react-router-dom';
-import { Users, UserPlus, List, ChevronRight, Home, LayoutDashboard } from 'lucide-react';
+import React from 'react';
+import { Routes, Route, Link, useLocation, useParams } from 'react-router-dom';
+import { Users, UserPlus, ChevronRight, LayoutDashboard } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import AdminList from '../components/superAdmin/AdminList';
 import AdminForm from '../components/superAdmin/AdminForm';
@@ -9,7 +9,6 @@ import AdminDetails from '../components/superAdmin/AdminDetails';
 
 const SuperAdminDashboard: React.FC = () => {
   const { currentUser } = useAuth();
-  const navigate = useNavigate();
   const location = useLocation();
   
   return (
@@ -68,8 +67,6 @@ const SuperAdminDashboard: React.FC = () => {
 
 // Home component for the dashboard
 const SuperAdminHome: React.FC = () => {
-  const navigate = useNavigate();
-  
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6 text-white">Super Admin Dashboard</h1>
@@ -86,7 +83,7 @@ const SuperAdminHome: React.FC = () => {
           <Button 
             variant="outline" 
             className="w-full justify-between border-gray-700 text-white hover:bg-gray-800"
-            onClick={() => navigate('/superadmin-dashboard/admins')}
+            onClick={() => window.location.href = '/superadmin-dashboard/admins'}
           >
             View All Admins
             <ChevronRight className="h-4 w-4" />
@@ -104,7 +101,7 @@ const SuperAdminHome: React.FC = () => {
           <Button 
             variant="outline" 
             className="w-full justify-between border-gray-700 text-white hover:bg-gray-800"
-            onClick={() => navigate('/superadmin-dashboard/admins/new')}
+            onClick={() => window.location.href = '/superadmin-dashboard/admins/new'}
           >
             Add Admin
             <ChevronRight className="h-4 w-4" />

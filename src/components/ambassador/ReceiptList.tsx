@@ -13,7 +13,7 @@ interface ReceiptListProps {
   isAdmin?: boolean;
 }
 
-const ReceiptList: React.FC<ReceiptListProps> = ({ isAdmin = false }) => {
+const ReceiptList: React.FC<ReceiptListProps> = () => {
   const [receipts, setReceipts] = useState<Receipt[]>([]);
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();

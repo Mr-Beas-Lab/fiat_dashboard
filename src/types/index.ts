@@ -24,6 +24,8 @@ export interface Receipt {
   currency: string
   status: string
   ambassadorId?: string
+  ambassadorName?: string
+  ambassadorEmail?: string
   senderTgId: string
   documents: string[]
   createdAt: Date
@@ -82,16 +84,6 @@ export interface Country {
   flag: string
 }
 
-export interface Receipt {
-  id: string
-  aId: string
-  amount: number
-  senderTgId: string
-  documents: string[]
-  status: string
-  createdAt: Date
-}
-
 export interface AdminUser {
   uid: string;
   firstName: string;
@@ -103,5 +95,28 @@ export interface AdminUser {
   status?: 'active' | 'inactive';
   createdAt?: string;
   updatedAt?: string;
+}
+
+export interface AuthUser {
+  id: string
+  uid: string
+  firstName: string
+  lastName: string
+  email: string
+  role: string
+  kycStatus?: string
+}
+
+export interface LoginResponse {
+  error?: string
+  firstName?: string
+  lastName?: string
+  token?: string
+  user?: AuthUser
+}
+
+export interface ApiError {
+  error: 'unauthorized' | 'network-error' | string
+  message?: string
 }
 
