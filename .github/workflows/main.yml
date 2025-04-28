@@ -25,33 +25,15 @@ jobs:
       - name: Push Frontend Docker Image
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
 
-      # 🔄 SSH into server and redeploy
-      - name: SSH and deploy on server
-        env:
-          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
-        run: |
-          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-
-            set -e
-            echo "🔐 Connected to server"
-
-            cd /home/million/mrbeas || {
-              echo "❌ Failed to cd into /home/million/mrbeas"
-              exit 1
-            }
-
-            echo "🛑 Stopping containers..."
-            docker-compose down
-
-            echo "🧹 Pruning unused Docker images..."
+      # 🔄 SSH into server and pull new images
+      - name: SSH into Server and Deploy
+        uses: appleboy/ssh-action@v0.1.6
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          script: |
+            cd /home/million/mrbeas
+            docker-compose pull
+            docker-compose up -d
             docker image prune -af || true
-
-            echo "⬇️ Pulling latest frontend image..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
-
-            echo "🚀 Rebuilding and starting services..."
-            docker-compose up -d --build
-
-            echo "✅ Frontend deployed!"
-          EOF
