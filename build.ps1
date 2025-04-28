@@ -1,9 +1,0 @@
-docker build `
-  --build-arg VITE_FIREBASE_API_KEY="AIzaSyDenzRNdT2yigG8yxisdK_1A1IH_DfH9Mo" `
-  --build-arg VITE_FIREBASE_AUTH_DOMAIN="ymrjohn-8ee8b.firebaseapp.com" `
-  --build-arg VITE_FIREBASE_PROJECT_ID="mrjohn-8ee8b" `
-  --build-arg VITE_FIREBASE_STORAGE_BUCKET="mrjohn-8ee8b.firebasestorage.app" `
-  --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID="662877699866" `
-  --build-arg VITE_FIREBASE_APP_ID="1:662877699866:web:451ade51fbfafafed236a3" `
-  --build-arg VITE_FIREBASE_MEASUREMENT_ID="G-BBLWJYWS31" `
-  -t millionmulugeta/dashboard:latest . 
