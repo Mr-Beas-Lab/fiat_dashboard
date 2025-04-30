@@ -30,6 +30,11 @@ RUN echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" > .env && \
     echo "VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID" >> .env && \
     echo "VITE_FIREBASE_MEASUREMENT_ID=$VITE_FIREBASE_MEASUREMENT_ID" >> .env
 
+# Install TypeScript globally and update tsconfig
+RUN npm install -g typescript && \
+    sed -i 's/"moduleResolution": "bundler"/"moduleResolution": "node"/g' tsconfig.json && \
+    sed -i 's/"moduleResolution": "bundler"/"moduleResolution": "node"/g' tsconfig.node.json
+
 # Build the application
 RUN npm run build
 
