@@ -17,9 +17,26 @@ jobs:
       - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      # 🛠 Build Docker image
+      # 🛠 Build Docker image with Firebase env vars
       - name: Build Docker image
-        run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest .
+        env:
+          VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+          VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+          VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+          VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+          VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+          VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+        run: |
+          docker build \
+            --build-arg VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
+            --build-arg VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
+            --build-arg VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
+            --build-arg VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET \
+            --build-arg VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID \
+            --build-arg VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
+            --build-arg VITE_FIREBASE_MEASUREMENT_ID=$VITE_FIREBASE_MEASUREMENT_ID \
+            -t ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest .
 
       # 🚀 Push image to Docker Hub
       - name: Push Docker image
@@ -32,21 +49,10 @@ jobs:
         run: |
           sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no \
           ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
-
             set -e
-
-            echo "🔐 Connected to server"
-
-            cd /home/million/mrbeas || {
-              echo "❌ Failed to cd into /home/million/mrbeas"
-              exit 1
-            }
-
-            echo "⬇️ Pulling latest Docker image from Docker Hub..."
-            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
-
-            echo "🚀 Rebuilding and starting services..."
-            docker-compose up -d --build
-
+            cd /home/million/mrbeas
+            docker-compose down
+            docker-compose pull
+            docker-compose up -d
             echo "✅ Deployment successful!"
           EOF
