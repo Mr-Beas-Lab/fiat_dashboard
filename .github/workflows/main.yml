@@ -42,12 +42,6 @@ jobs:
               exit 1
             }
 
-            echo "🛑 Stopping old containers..."
-            docker-compose down
-
-            echo "🧹 Cleaning up old Docker images..."
-            docker image prune -af || true
-
             echo "⬇️ Pulling latest Docker image from Docker Hub..."
             docker pull ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
 
