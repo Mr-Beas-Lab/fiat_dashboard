@@ -21,21 +21,23 @@ RUN npm ci
 # Copy the rest of the application code
 COPY . .
 
-# Build the application with environment variables
-RUN VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
-    VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN \
-    VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID \
-    VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET \
-    VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID \
-    VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
-    VITE_FIREBASE_MEASUREMENT_ID=$VITE_FIREBASE_MEASUREMENT_ID \
-    npm run build
+# Create a temporary .env file with Firebase configuration
+RUN echo "VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY" > .env && \
+    echo "VITE_FIREBASE_AUTH_DOMAIN=$VITE_FIREBASE_AUTH_DOMAIN" >> .env && \
+    echo "VITE_FIREBASE_PROJECT_ID=$VITE_FIREBASE_PROJECT_ID" >> .env && \
+    echo "VITE_FIREBASE_STORAGE_BUCKET=$VITE_FIREBASE_STORAGE_BUCKET" >> .env && \
+    echo "VITE_FIREBASE_MESSAGING_SENDER_ID=$VITE_FIREBASE_MESSAGING_SENDER_ID" >> .env && \
+    echo "VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID" >> .env && \
+    echo "VITE_FIREBASE_MEASUREMENT_ID=$VITE_FIREBASE_MEASUREMENT_ID" >> .env
+
+# Build the application
+RUN npm run build
 
 # Stage 2: Serve with Caddy
 FROM caddy:latest
 
 # Copy built assets from builder
-COPY --from=builder /app/build /srv
+COPY --from=builder /app/dist /srv
 
 # Copy Caddyfile
 COPY Caddyfile /etc/caddy/Caddyfile
