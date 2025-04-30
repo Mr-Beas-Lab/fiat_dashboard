@@ -1,34 +1,28 @@
-# ----------- Stage 1: Build the app ----------- #
+# Build stage
 FROM node:20-alpine AS builder
-
-WORKDIR /app
-
-# Copy only package files first to leverage caching
+WORKDIR /usr/src/app
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install
-
-# Copy the rest of the source code
+RUN npm ci
 COPY . .
-
-# Build the app
 RUN npm run build
 
-# ----------- Stage 2: Serve with Nginx ----------- #
-FROM nginx:alpine
+# Production stage
+FROM node:20-alpine
+WORKDIR /usr/src/app
 
-# Remove default Nginx static files if any
-RUN rm -rf /usr/share/nginx/html/*
+# Install production dependencies
+COPY package*.json ./
+RUN npm ci --only=production
 
-# Copy built app from builder
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy built files from builder
+COPY --from=builder /usr/src/app/dist ./dist
 
-# Copy custom Nginx config for SPA routing support
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Health check (recommended for backend services)
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:3000/health || exit 1
 
-# Expose the port the app runs on
-EXPOSE 80
+# Expose the correct port (should match what you specified in docker-compose)
+EXPOSE 3000
 
-# Start Nginx
-CMD ["nginx", "-g", "daemon off;"]
+# Run the application (ensure this matches your built file structure)
+CMD ["node", "dist/src/main.js"]
