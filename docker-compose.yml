@@ -1,116 +1,59 @@
 version: '3.8'
 
 services:
-  remi_server:
-    container_name: remi_server
-    image: millionmulugeta/remi_server:latest  
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      PORT: 80
-      VIRTUAL_HOST: api.glofica.com
-      VIRTUAL_PORT: 80
-      LETSENCRYPT_ENABLED: "true"
-      LETSENCRYPT_HOST: api.glofica.com
-      LETSENCRYPT_EMAIL: millionmulugeta01@gmail.com
-    volumes:
-      - ./remi_Backend:/app   
-      - /app/node_modules
-    restart: unless-stopped
-    networks:
-      - backend-network
+  dashboard:
+    image: $DOCKERHUB_USERNAME/dashboard:latest
+    container_name: dashboard_app
+    restart: always
+    expose:
+      - "3000"
+
   mrb_backend:
+    image: $DOCKERHUB_USERNAME/mrb_backend:latest
     container_name: mrb_backend
-    image: millionmulugeta/mrb_backend:latest  
-    env_file:
-      - .env
-    environment:
-      NODE_ENV: production
-      PORT: 80
-      VIRTUAL_HOST: dashboard-backend.mrbeas.net
-      VIRTUAL_PORT: 80
-      LETSENCRYPT_ENABLED: "true"
-      LETSENCRYPT_HOST: dashboard-backend.mrbeas.net
-      LETSENCRYPT_EMAIL: millionmulugeta01@gmail.com
-    volumes:
-      - ./mrb_backend:/app   
-      - /app/node_modules
-    restart: unless-stopped
-    networks:
-      - backend-network
+    restart: always
+    expose:
+      - "3000"
 
   mini_app:
+    image: $DOCKERHUB_USERNAME/mini_app:latest
     container_name: mini_app
-    image: millionmulugeta/mini_app:latest
-    environment:
-      NODE_ENV: production
-      PORT: 80
-      VIRTUAL_HOST: frontend.mrbeas.net
-      VIRTUAL_PORT: 80
-      LETSENCRYPT_ENABLED: "true"
-      LETSENCRYPT_HOST: frontend.mrbeas.net
-      LETSENCRYPT_EMAIL: millionmulugeta01@gmail.com
-    volumes:
-      - ./frontend/build:/usr/share/nginx/html
-    restart: unless-stopped
-    networks:
-      - backend-network
+    restart: always
+    expose:
+      - "3000"
 
-  dashboard:
-    container_name: dashboard
-    image: millionmulugeta/dashboard:latest
-    environment:
-      NODE_ENV: production
-      PORT: 80
-      VIRTUAL_HOST: wam.mrbeas.net
-      VIRTUAL_PORT: 80
-      LETSENCRYPT_ENABLED: "true"
-      LETSENCRYPT_HOST: wam.mrbeas.net
-      LETSENCRYPT_EMAIL: millionmulugeta01@gmail.com
-    volumes:
-      - ./dashboard/build:/usr/share/nginx/html
-    restart: unless-stopped
-    networks:
-      - backend-network
+  remi_Backend:
+    image: $DOCKERHUB_USERNAME/remi_Backend:latest
+    container_name: remi_backend
+    restart: always
+    expose:
+      - "3000"
 
-  nginx-proxy:
-    image: nginxproxy/nginx-proxy
-    container_name: nginx-proxy
+  website:
+    image: $DOCKERHUB_USERNAME/website:latest
+    container_name: website_app
+    restart: always
+    expose:
+      - "80"
+
+  caddy:
+    image: caddy:latest
+    container_name: caddy_reverse_proxy
+    restart: always
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - certs:/etc/nginx/certs:rw
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/tmp/docker.sock:ro
-    restart: unless-stopped
-    networks:
-      - backend-network
-
-  nginx-letsencrypt:
-    image: nginxproxy/acme-companion
-    container_name: nginx-letsencrypt
-    environment:
-      DEFAULT_EMAIL: millionmulugeta01@gmail.com
-      NGINX_PROXY_CONTAINER: nginx-proxy
-    volumes:
-      - certs:/etc/nginx/certs:rw
-      - vhost:/etc/nginx/vhost.d
-      - html:/usr/share/nginx/html
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
     depends_on:
-      - nginx-proxy
-    restart: unless-stopped
-    networks:
-      - backend-network
+      - dashboard
+      - mrb_backend
+      - mini_app
+      - remi_Backend
+      - website
 
 volumes:
-  certs:
-  vhost:
-  html:
-
-networks:
-  backend-network:
-    driver: bridge
+  caddy_data:
+  caddy_config:
