@@ -2,22 +2,27 @@
 FROM node:20-alpine AS builder
 
 WORKDIR /app
+
+# Copy package.json and package-lock.json
 COPY package*.json ./
+
+# Install dependencies
 RUN npm ci
+
+# Copy the rest of the application code
 COPY . .
+
+# Build the application
 RUN npm run build
 
-# Stage 2: Serve with Nginx
-FROM nginx:alpine
-
-# Remove default nginx config
-RUN rm /etc/nginx/conf.d/default.conf
-
-# Copy custom nginx config
-COPY nginx.conf /etc/nginx/conf.d
+# Stage 2: Serve with Caddy
+FROM caddy:latest
 
 # Copy built assets from builder
-COPY --from=builder /app/build /usr/share/nginx/html
+COPY --from=builder /app/build /srv
+
+# Copy Caddyfile
+COPY Caddyfile /etc/caddy/Caddyfile
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s \
