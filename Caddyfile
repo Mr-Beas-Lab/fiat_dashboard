@@ -2,11 +2,76 @@
 {
     email your-email@example.com
     acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+    auto_https off  # Disable automatic HTTPS for development
 }
 
-# Main domain
-dashboard.yourdomain.com {
-    root * /srv
-    file_server
+# Dashboard service
+dashboard.localhost {
+    reverse_proxy dashboard:3000 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+        header_up X-Forwarded-For {http.request.remote}
+        header_up X-Forwarded-Proto {http.request.scheme}
+    }
     encode gzip
+    header {
+        # Security headers
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com;"
+    }
+}
+
+# MRB Backend service
+api.localhost {
+    reverse_proxy mrb_backend:3000 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+        header_up X-Forwarded-For {http.request.remote}
+        header_up X-Forwarded-Proto {http.request.scheme}
+    }
+    encode gzip
+}
+
+# Mini App service
+mini.localhost {
+    reverse_proxy mini_app:3000 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+        header_up X-Forwarded-For {http.request.remote}
+        header_up X-Forwarded-Proto {http.request.scheme}
+    }
+    encode gzip
+}
+
+# Remi Backend service
+remi.localhost {
+    reverse_proxy remi_Backend:3000 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+        header_up X-Forwarded-For {http.request.remote}
+        header_up X-Forwarded-Proto {http.request.scheme}
+    }
+    encode gzip
+}
+
+# Website service
+localhost {
+    reverse_proxy website:80 {
+        header_up Host {http.request.host}
+        header_up X-Real-IP {http.request.remote}
+        header_up X-Forwarded-For {http.request.remote}
+        header_up X-Forwarded-Proto {http.request.scheme}
+    }
+    encode gzip
+    header {
+        # Security headers
+        X-Frame-Options "SAMEORIGIN"
+        X-Content-Type-Options "nosniff"
+        X-XSS-Protection "1; mode=block"
+        Referrer-Policy "strict-origin-when-cross-origin"
+        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com;"
+    }
 }
