@@ -1,4 +1,4 @@
-name: Build & Deploy Frontend
+name: Build, Push Docker Image & Deploy
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
 
 jobs:
-  build-and-deploy-frontend:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
@@ -14,26 +14,45 @@ jobs:
         uses: actions/checkout@v3
 
       # 🔐 Docker login
-      - name: Login to Docker Hub
+      - name: Log in to Docker Hub
         run: echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
 
-      # 🛠 Build frontend Docker image
-      - name: Build Frontend Docker Image
+      # 🛠 Build Docker image
+      - name: Build Docker image
         run: docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest .
 
-      # 🚀 Push frontend image to Docker Hub
-      - name: Push Frontend Docker Image
+      # 🚀 Push image to Docker Hub
+      - name: Push Docker image
         run: docker push ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
 
-      # 🔄 SSH into server and pull new images
-      - name: SSH into Server and Deploy
-        uses: appleboy/ssh-action@v0.1.6
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
-          script: |
-            cd /home/million/mrbeas
-            docker-compose pull
-            docker-compose up -d
+      # 🔄 Deploy on remote Ubuntu server
+      - name: SSH and deploy on server
+        env:
+          SERVER_PASSWORD: ${{ secrets.SERVER_PASSWORD }}
+        run: |
+          sshpass -p "$SERVER_PASSWORD" ssh -o StrictHostKeyChecking=no \
+          ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_IP }} << 'EOF'
+
+            set -e
+
+            echo "🔐 Connected to server"
+
+            cd /home/million/mrbeas || {
+              echo "❌ Failed to cd into /home/million/mrbeas"
+              exit 1
+            }
+
+            echo "🛑 Stopping old containers..."
+            docker-compose down
+
+            echo "🧹 Cleaning up old Docker images..."
             docker image prune -af || true
+
+            echo "⬇️ Pulling latest Docker image from Docker Hub..."
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/dashboard:latest
+
+            echo "🚀 Rebuilding and starting services..."
+            docker-compose up -d --build
+
+            echo "✅ Deployment successful!"
+          EOF
