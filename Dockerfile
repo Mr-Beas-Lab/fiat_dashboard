@@ -1,17 +1,33 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
+
+# Set working directory
 WORKDIR /app
+
+# Copy package files
 COPY package*.json ./
+
+# Install dependencies
 RUN npm ci
+
+# Copy source code
 COPY . .
+
+
+# Build the application
 RUN npm run build
 
-# Stage 2: Serve
-FROM node:20-alpine
-WORKDIR /app
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-RUN npm ci --omit=dev
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-EXPOSE 3000
-CMD ["npm", "run", "preview"]
+# Stage 2: Production
+FROM nginx:alpine
+
+# Copy built assets from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+# Expose port 80
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
