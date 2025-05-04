@@ -60,8 +60,22 @@ jobs:
             # Ensure all services are up (including Caddy)
             docker-compose up -d
             
-            # Wait for Caddy to be ready
-            sleep 5
+            # Wait for Caddy to be fully running
+            echo "Waiting for Caddy to be ready..."
+            timeout=30
+            while [ $timeout -gt 0 ]; do
+              if docker ps | grep -q "caddy_reverse_proxy.*Up"; then
+                echo "Caddy is running!"
+                break
+              fi
+              sleep 1
+              timeout=$((timeout-1))
+            done
+            
+            if [ $timeout -eq 0 ]; then
+              echo "Timeout waiting for Caddy to start"
+              exit 1
+            fi
             
             # Reload Caddy configuration
             docker exec caddy_reverse_proxy caddy reload
