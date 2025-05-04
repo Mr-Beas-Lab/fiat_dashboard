@@ -27,24 +27,12 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-    environment:
-      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
+
     networks:
       - app-network
     depends_on:
       - dashboard
 
-  api:
-    image: millionmulugeta/api:latest
-    container_name: api
-    restart: unless-stopped
-    networks:
-      - app-network
-    expose:
-      - "5000"
-    environment:
-      - NODE_ENV=production
-      - PORT=5000
 
 volumes:
   caddy_data:
