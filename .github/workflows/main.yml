@@ -1,4 +1,4 @@
-name: Deploy Frontend to Production
+name: Deploy to Production
 
 on:
   push:
@@ -26,19 +26,12 @@ jobs:
           context: .
           push: true
           tags: |
-            millionmulugeta/dashboard:latest
-            millionmulugeta/dashboard:${{ github.sha }}
+            millionmulugeta/api:latest
+            millionmulugeta/api:${{ github.sha }}
           build-args: |
-            VITE_API_URL=https://backend-dashboard.mrbeas.net
-            VITE_FIREBASE_API_KEY=${{ secrets.VITE_FIREBASE_API_KEY }}
-            VITE_FIREBASE_AUTH_DOMAIN=${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
-            VITE_FIREBASE_PROJECT_ID=${{ secrets.VITE_FIREBASE_PROJECT_ID }}
-            VITE_FIREBASE_STORAGE_BUCKET=${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
-            VITE_FIREBASE_MESSAGING_SENDER_ID=${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
-            VITE_FIREBASE_APP_ID=${{ secrets.VITE_FIREBASE_APP_ID }}
-            VITE_FIREBASE_MEASUREMENT_ID=${{ secrets.MEASUREMENTID }}
-          cache-from: type=registry,ref=millionmulugeta/dashboard:buildcache
-          cache-to: type=registry,ref=millionmulugeta/dashboard:buildcache,mode=max
+            NODE_ENV=production
+          cache-from: type=registry,ref=millionmulugeta/api:buildcache
+          cache-to: type=registry,ref=millionmulugeta/api:buildcache,mode=max
 
       - name: Deploy to production server
         uses: appleboy/ssh-action@v1.0.3
@@ -47,58 +40,69 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
-          timeout: 5m  # Proper duration format (5 minutes)
-          command_timeout: 10m  # For individual commands
-           script: |
+          timeout: 10m
+          script: |
+            #!/bin/bash
             set -exo pipefail
 
-            echo "🔐 Connecting to server..."
-            cd /home/million/mrbeas/dashboard || { echo "❌ Directory not found"; exit 1; }
+            # Setup environment
+            DEPLOY_DIR="/home/million/glofica"
+            LOG_FILE="/tmp/deploy_$(date +'%Y%m%d_%H%M%S').log"
 
-            # Force-free ports 80/443 (improved version)
+            # Redirect output to log file
+            exec > >(tee -a "$LOG_FILE") 2>&1
+
+            echo "🔐 Starting deployment at $(date)"
+
+            # Verify deployment directory
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "❌ Error: Deployment directory $DEPLOY_DIR not found"
+              exit 1
+            fi
+
+            cd "$DEPLOY_DIR" || exit 1
+
+            # Handle sudo authentication
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S true
+
+            # Free ports 80/443
             echo "🔍 Freeing ports 80 and 443..."
-            sudo ss -tulnp | grep -E ':(80|443)\s' | awk '{print $NF}' | cut -d ',' -f 2 | xargs -r sudo kill -9 2>/dev/null || true
-            sudo pkill -9 docker-proxy 2>/dev/null || true
-            sudo iptables -t nat -F
-            sudo systemctl restart docker
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S ss -tulnp | grep -E ':(80|443)\s' | awk '{print $NF}' | cut -d ',' -f 2 | xargs -r sudo kill -9 2>/dev/null || true
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S pkill -9 docker-proxy 2>/dev/null || true
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S iptables -t nat -F
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl restart docker
             sleep 3
 
-            # Verify .env file exists and is readable
+            # Verify and prepare .env file
             if [ ! -f .env ]; then
               echo "❌ .env file not found"
               exit 1
             fi
 
-            # Fix .env file format
-            echo "📝 Fixing .env file format..."
-            # Convert CRLF to LF and remove any BOM
-            sed -i 's/\r$//' .env
-            # Remove any empty lines and comments
-            sed -i '/^$/d;/^#/d' .env
-            # Ensure each line ends with a newline
-            sed -i -e '$a\' .env
+            echo "📝 Preparing .env file..."
+            # Normalize line endings and format
+            sudo sed -i 's/\r$//' .env
+            sudo sed -i '/^$/d;/^#/d' .env
+            sudo sed -i -e '$a\' .env
 
-            # Load environment variables safely
-            echo "📝 Loading environment variables..."
-            while IFS='=' read -r key value; do
-              # Skip empty lines
-              [ -z "$key" ] && continue
-              # Remove any quotes and trailing spaces
-              value=$(echo "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^["\x27]//' -e 's/["\x27]$//')
-              # Export the variable
-              export "$key=$value"
-            done < .env
-
-            echo "⬇️ Pulling latest image..."
+            # Pull latest image
+            echo "⬇️ Pulling latest Docker image..."
             docker pull millionmulugeta/api:latest
 
-            echo "🚀 Starting deployment..."
+            # Start deployment
+            echo "🚀 Starting containers..."
             docker-compose down --remove-orphans
             docker-compose up -d
 
-            echo "⏳ Waiting for services..."
+            # Verify deployment
+            echo "⏳ Waiting for services to start..."
             sleep 30
 
-            echo "✅ Deployment successful"
+            echo "✅ Deployment verification:"
             docker-compose ps
+
+            echo "📝 Caddy logs:"
             docker logs caddy --tail 20
+
+            echo "🏁 Deployment completed successfully at $(date)"
+            exit 0
