@@ -1,2 +1,14 @@
 FROM caddy:2-alpine
+
+# Create log directory
+RUN mkdir -p /var/log/caddy
+
+# Set proper permissions
+RUN chown -R caddy:caddy /var/log/caddy
+
+# Copy custom Caddyfile
+COPY Caddyfile /etc/caddy/Caddyfile
+
+# Set proper permissions for Caddyfile
+RUN chown caddy:caddy /etc/caddy/Caddyfile
  
