@@ -5,29 +5,35 @@ services:
     image: millionmulugeta/dashboard:latest
     container_name: dashboard
     restart: unless-stopped
-    ports:
-      - "3000:3000"
     networks:
-      - mrbeas_web_network
+      - dashboard_mrbeas_web_network
+    expose:
+      - "3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
 
-  caddy_reverse_proxy:
-    image: caddy:latest
-    container_name: caddy_reverse_proxy
+  caddy:
+    image: caddy:2-alpine
+    container_name: dashboard_caddy
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     networks:
-      - mrbeas_web_network
-
-networks:
-  mrbeas_web_network:
-    driver: bridge
+      - dashboard_mrbeas_web_network
+    depends_on:
+      dashboard:
+        condition: service_healthy
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  dashboard_mrbeas_web_network:
+    driver: bridge
