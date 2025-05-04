@@ -1,38 +1,17 @@
-# Stage 1: Build the application
+# Stage 1: Build
 FROM node:20-alpine AS builder
-
-# Add build arguments for Firebase configuration
-ARG VITE_FIREBASE_API_KEY
-ARG VITE_FIREBASE_AUTH_DOMAIN
-ARG VITE_FIREBASE_PROJECT_ID
-ARG VITE_FIREBASE_STORAGE_BUCKET
-ARG VITE_FIREBASE_MESSAGING_SENDER_ID
-ARG VITE_FIREBASE_APP_ID
-ARG VITE_FIREBASE_MEASUREMENT_ID
-
 WORKDIR /app
-
-# Copy package files first for better caching
 COPY package*.json ./
 RUN npm ci
-
-# Copy the rest of the application code
 COPY . .
-
-# Create .env file from build arguments
-RUN echo "VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}" > .env && \
-    echo "VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}" >> .env && \
-    echo "VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}" >> .env && \
-    echo "VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}" >> .env && \
-    echo "VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}" >> .env && \
-    echo "VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}" >> .env && \
-    echo "VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}" >> .env
-
-# Build the application
 RUN npm run build
 
-# Stage 2: Serve with Caddy
-FROM caddy:latest
-COPY --from=builder /app/dist /usr/share/nginx/html
-COPY Caddyfile /etc/caddy/Caddyfile
-EXPOSE 80
+# Stage 2: Serve
+FROM node:20-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
+EXPOSE 3000
+CMD ["npm", "run", "preview"]

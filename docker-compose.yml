@@ -2,58 +2,51 @@ version: '3.8'
 
 services:
   dashboard:
-    image: $DOCKERHUB_USERNAME/dashboard:latest
-    container_name: dashboard_app
-    restart: always
+    image: millionmulugeta/dashboard:latest
+    container_name: dashboard
+    restart: unless-stopped
+    networks:
+      - mrbeas_web_network
     expose:
       - "3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - VITE_API_URL=https://backend-dashboard.mrbeas.net
 
   mrb_backend:
-    image: $DOCKERHUB_USERNAME/mrb_backend:latest
+    image: millionmulugeta/mrb_backend:latest
     container_name: mrb_backend
-    restart: always
+    restart: unless-stopped
+    networks:
+      - mrbeas_web_network
     expose:
       - "3000"
-
-  mini_app:
-    image: $DOCKERHUB_USERNAME/mini_app:latest
-    container_name: mini_app
-    restart: always
-    expose:
-      - "3000"
-
-  remi_Backend:
-    image: $DOCKERHUB_USERNAME/remi_Backend:latest
-    container_name: remi_backend
-    restart: always
-    expose:
-      - "3000"
-
-  website:
-    image: $DOCKERHUB_USERNAME/website:latest
-    container_name: website_app
-    restart: always
-    expose:
-      - "80"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
 
   caddy:
-    image: caddy:latest
+    image: caddy:2-alpine
     container_name: caddy_reverse_proxy
-    restart: always
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
+    networks:
+      - mrbeas_web_network
     depends_on:
       - dashboard
       - mrb_backend
-      - mini_app
-      - remi_Backend
-      - website
 
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  mrbeas_web_network:
+    driver: bridge

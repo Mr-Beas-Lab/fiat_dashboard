@@ -1,77 +1,39 @@
-# Global settings
+# Global settings (development)
 {
-    email your-email@example.com
-    acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
-    auto_https off  # Disable automatic HTTPS for development
+    email millionmulugeta01@gmail.com
+    local_certs  # Use self-signed certificates for development
+    debug
 }
 
-# Dashboard service
-dashboard.localhost {
+# Frontend - Dashboard
+wam.mrbeas.net {
     reverse_proxy dashboard:3000 {
-        header_up Host {http.request.host}
-        header_up X-Real-IP {http.request.remote}
-        header_up X-Forwarded-For {http.request.remote}
-        header_up X-Forwarded-Proto {http.request.scheme}
+        header_up Host {host}
+        header_up X-Real-IP {remote}
+        header_up X-Forwarded-Proto {scheme}
     }
-    encode gzip
+    
+    encode gzip zstd
+    
     header {
-        # Security headers
-        X-Frame-Options "SAMEORIGIN"
+        Strict-Transport-Security "max-age=31536000;"
         X-Content-Type-Options "nosniff"
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com;"
+        X-Frame-Options "DENY"
+    }
+    
+    tls internal {
+        resolvers 1.1.1.1
     }
 }
 
-# MRB Backend service
-api.localhost {
+# Backend API
+backend-dashboard.mrbeas.net {
     reverse_proxy mrb_backend:3000 {
-        header_up Host {http.request.host}
-        header_up X-Real-IP {http.request.remote}
-        header_up X-Forwarded-For {http.request.remote}
-        header_up X-Forwarded-Proto {http.request.scheme}
+        header_up Host {host}
+        header_up X-Real-IP {remote}
     }
-    encode gzip
-}
-
-# Mini App service
-mini.localhost {
-    reverse_proxy mini_app:3000 {
-        header_up Host {http.request.host}
-        header_up X-Real-IP {http.request.remote}
-        header_up X-Forwarded-For {http.request.remote}
-        header_up X-Forwarded-Proto {http.request.scheme}
-    }
-    encode gzip
-}
-
-# Remi Backend service
-remi.localhost {
-    reverse_proxy remi_Backend:3000 {
-        header_up Host {http.request.host}
-        header_up X-Real-IP {http.request.remote}
-        header_up X-Forwarded-For {http.request.remote}
-        header_up X-Forwarded-Proto {http.request.scheme}
-    }
-    encode gzip
-}
-
-# Website service
-localhost {
-    reverse_proxy website:80 {
-        header_up Host {http.request.host}
-        header_up X-Real-IP {http.request.remote}
-        header_up X-Forwarded-For {http.request.remote}
-        header_up X-Forwarded-Proto {http.request.scheme}
-    }
-    encode gzip
-    header {
-        # Security headers
-        X-Frame-Options "SAMEORIGIN"
-        X-Content-Type-Options "nosniff"
-        X-XSS-Protection "1; mode=block"
-        Referrer-Policy "strict-origin-when-cross-origin"
-        Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.firebaseio.com https://*.googleapis.com;"
+    
+    tls internal {
+        resolvers 1.1.1.1
     }
 }
