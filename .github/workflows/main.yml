@@ -51,9 +51,19 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
-            set -e
+            set -ex
             cd /home/million/mrbeas
-            docker-compose pull dashboard
-            docker-compose up -d --no-deps dashboard
+            
+            # Stop and remove any orphaned containers
+            docker-compose down --remove-orphans
+            
+            # Ensure all services are up (including Caddy)
+            docker-compose up -d
+            
+            # Wait for Caddy to be ready
+            sleep 5
+            
+            # Reload Caddy configuration
             docker exec caddy_reverse_proxy caddy reload
-            echo "✅ Dashboard deployment successful!"
+            
+            echo "✅ Deployment successful!"
