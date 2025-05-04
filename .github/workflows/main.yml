@@ -49,65 +49,108 @@ jobs:
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
           script: |
             set -ex
-            cd /home/million/mrbeas/dashboard
             
-            # Stop and remove any orphaned containers
-            docker-compose down --remove-orphans
+            # Define container names
+            DASHBOARD_CONTAINER="dashboard"
+            CADDY_CONTAINER="caddy_reverse_proxy"
+            BACKEND_CONTAINER="mrb_backend"
             
-            # Ensure all services are up (including Caddy)
-            docker-compose up -d
+            # Function to check container status
+            check_container() {
+              local status=$(docker inspect -f '{{.State.Status}}' $1 2>/dev/null || echo "missing")
+              echo "$status"
+            }
             
             # Function to check container logs
             check_logs() {
               echo "=== $1 Container Logs ==="
-              docker logs $1
+              docker logs $1 2>&1 | tail -n 50
               echo "========================"
             }
+            
+            # Navigate to dashboard directory
+            cd /home/million/mrbeas/dashboard
+            
+            # Stop and remove any existing containers
+            echo "Stopping and removing existing containers..."
+            docker-compose down --remove-orphans --timeout 30 || true
+            docker rm -f $DASHBOARD_CONTAINER $CADDY_CONTAINER $BACKEND_CONTAINER || true
+            
+            # Clean up networks and volumes
+            echo "Cleaning up networks..."
+            docker network prune -f || true
+            echo "Cleaning up volumes..."
+            docker volume prune -f || true
+            
+            # Pull latest images
+            echo "Pulling latest images..."
+            docker-compose pull
+            
+            # Start services with force recreate
+            echo "Starting services..."
+            docker-compose up -d --force-recreate --build
             
             # Wait for services to be fully running
             echo "Waiting for services to be ready..."
             timeout=60
+            all_healthy=false
+            
             while [ $timeout -gt 0 ]; do
-              if docker ps | grep -q "caddy_reverse_proxy.*Up" && \
-                 docker ps | grep -q "dashboard.*Up" && \
-                 docker ps | grep -q "mrb_backend.*Up"; then
-                echo "All services are running!"
+              dashboard_status=$(check_container $DASHBOARD_CONTAINER)
+              caddy_status=$(check_container $CADDY_CONTAINER)
+              backend_status=$(check_container $BACKEND_CONTAINER)
+              
+              if [ "$dashboard_status" = "running" ] && \
+                 [ "$caddy_status" = "running" ] && \
+                 [ "$backend_status" = "running" ]; then
+                all_healthy=true
                 break
               fi
               
-              # Check logs if containers are restarting
-              if docker ps | grep -q "caddy_reverse_proxy.*Restarting"; then
-                check_logs caddy_reverse_proxy
+              # Check for restarting containers
+              if [ "$dashboard_status" = "restarting" ]; then
+                check_logs $DASHBOARD_CONTAINER
               fi
-              if docker ps | grep -q "dashboard.*Restarting"; then
-                check_logs dashboard
+              if [ "$caddy_status" = "restarting" ]; then
+                check_logs $CADDY_CONTAINER
               fi
-              if docker ps | grep -q "mrb_backend.*Restarting"; then
-                check_logs mrb_backend
+              if [ "$backend_status" = "restarting" ]; then
+                check_logs $BACKEND_CONTAINER
               fi
               
-              sleep 2
-              timeout=$((timeout-2))
+              sleep 5
+              timeout=$((timeout-5))
+              echo "Waiting... ($timeout seconds remaining)"
             done
             
-            if [ $timeout -eq 0 ]; then
+            if [ "$all_healthy" = false ]; then
               echo "Timeout waiting for services to start"
               echo "=== Final Container Status ==="
               docker ps -a
               echo "=== Container Logs ==="
-              check_logs caddy_reverse_proxy
-              check_logs dashboard
-              check_logs mrb_backend
+              check_logs $DASHBOARD_CONTAINER
+              check_logs $CADDY_CONTAINER
+              check_logs $BACKEND_CONTAINER
               exit 1
             fi
             
-            # Additional wait to ensure services are stable
-            sleep 5
+            # Additional health checks
+            echo "Running additional health checks..."
+            
+            # Check Caddy is serving traffic
+            if ! curl -I http://localhost 2>/dev/null | grep -q "HTTP/.*200"; then
+              echo "Caddy is not responding with 200 OK"
+              check_logs $CADDY_CONTAINER
+              exit 1
+            fi
             
             # Reload Caddy configuration
-            docker exec caddy_reverse_proxy caddy reload
+            echo "Reloading Caddy configuration..."
+            docker exec $CADDY_CONTAINER caddy reload
             
             echo "✅ Deployment successful!"
+            echo "All services are running:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
