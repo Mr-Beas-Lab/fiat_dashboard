@@ -45,9 +45,9 @@ jobs:
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
-          key: ${{ secrets.SERVER_SSH_KEY }}
+          password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
-          script_timeout: 300
+          timeout: 300
           script: |
             #!/bin/bash
             set -exo pipefail
@@ -69,6 +69,9 @@ jobs:
             
             cd "$DEPLOY_DIR" || exit 1
             
+            # Handle sudo password
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S true
+            
             # Check for running containers using ports 80/443
             echo "🔍 Checking for processes using ports 80/443..."
             if sudo lsof -i :80 || sudo lsof -i :443; then
@@ -76,8 +79,9 @@ jobs:
               docker-compose down --timeout 2 || true
               
               # Force stop any remaining processes
-              sudo fuser -k 80/tcp || true
-              sudo fuser -k 443/tcp || true
+              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S pkill -9 docker-proxy || true
+              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S fuser -k 80/tcp || true
+              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S fuser -k 443/tcp || true
               sleep 2
             fi
             
@@ -90,32 +94,4 @@ jobs:
             echo "⬇️ Pulling latest Docker image..."
             docker pull millionmulugeta/dashboard:latest
             
-            # Start deployment
-            echo "🚀 Starting containers..."
-            docker-compose up -d --remove-orphans
-            
-            # Health check
-            echo "🩺 Performing health checks..."
-            for i in {1..10}; do
-              if docker ps --filter "name=dashboard" --format "{{.Status}}" | grep -q "(healthy)"; then
-                break
-              fi
-              echo "⏳ Waiting for containers to be healthy (attempt $i/10)..."
-              sleep 10
-            done
-            
-            # Verify deployment
-            echo "✅ Deployment verification:"
-            docker-compose ps
-            
-            # Check Caddy logs
-            echo "📝 Caddy logs:"
-            docker logs caddy_reverse_proxy --tail 50
-            
-            # Final status
-            echo "🏁 Deployment completed successfully at $(date)"
-            echo "🔄 Container status:"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            
-            # Exit cleanly
-            exit 0
+           
