@@ -1,22 +1,23 @@
-# Global settings
+# Global options block
 {
-    admin off
     debug
+    email millionmulugeta01@gmail.com
 }
 
 wam.mrbeas.net {
-    # Enable automatic HTTPS
+    # Enable TLS with specific protocols
     tls {
         protocols tls1.2 tls1.3
     }
 
+    # Reverse proxy to your dashboard app on port 3000
     reverse_proxy dashboard:3000 {
         header_up Host {host}
-        header_up X-Real-IP {remote}
+        header_up X-Real-IP {remote_host}
         header_up X-Forwarded-Proto {scheme}
     }
-    
-    # Security headers
+
+    # Set security headers
     header {
         Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
         X-Content-Type-Options "nosniff"
@@ -24,8 +25,7 @@ wam.mrbeas.net {
         X-XSS-Protection "1; mode=block"
         Referrer-Policy "strict-origin-when-cross-origin"
     }
-    
-    # Compression
+
+    # Enable compression
     encode gzip zstd
 }
- 

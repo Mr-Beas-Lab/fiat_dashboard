@@ -19,18 +19,19 @@ export default defineConfig({
     assetsDir: 'assets',
   },
   server: {
-    host: true,
+    host: '0.0.0.0',
     port: 3000,
     strictPort: true,
     hmr: {
       protocol: 'wss',
       host: 'wam.mrbeas.net',
+      clientPort: 443
     },
   },
   preview: {
     port: 3000,
     strictPort: true,
-    host: true,
-    allowedHosts: ['wam.mrbeas.net'],
+    host: '0.0.0.0',
+    allowedHosts: 'all'
   },
 });
