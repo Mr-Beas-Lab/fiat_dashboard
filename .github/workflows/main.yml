@@ -52,7 +52,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           script: |
             set -ex
-            cd /home/million/mrbeas
+            cd /home/million/mrbeas/dashboard
             
             # Stop and remove any orphaned containers
             docker-compose down --remove-orphans
