@@ -9,7 +9,7 @@ wam.mrbeas.net {
     tls {
         protocols tls1.2 tls1.3
     }
-
+    tls millionmulugeta01@gmail.com
     # Reverse proxy to your dashboard app on port 3000
     reverse_proxy dashboard:3000 {
         header_up Host {host}
