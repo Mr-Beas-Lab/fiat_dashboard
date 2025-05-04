@@ -57,7 +57,6 @@ jobs:
             # Define container names
             DASHBOARD_CONTAINER="dashboard"
             CADDY_CONTAINER="caddy_reverse_proxy"
-            BACKEND_CONTAINER="mrb_backend"
             
             # Function to check container status
             check_container() {
@@ -73,31 +72,24 @@ jobs:
             
             # Navigate to dashboard directory
             cd /home/million/mrbeas/dashboard || {
-              echo "Error: Could not change to dashboard directory"
+              echo "::error::Could not change to dashboard directory"
               exit 1
             }
             
             # Stop and remove any existing containers
             echo "Stopping and removing existing containers..."
             docker-compose down --remove-orphans --timeout 30 || true
-            docker rm -f $DASHBOARD_CONTAINER $CADDY_CONTAINER $BACKEND_CONTAINER || true
+            docker rm -f $DASHBOARD_CONTAINER $CADDY_CONTAINER || true
             
             # Clean up networks and volumes
             echo "Cleaning up networks and volumes..."
             docker network prune -f || true
             docker volume prune -f || true
             
-            # Pull latest images
-            echo "Pulling latest images..."
-            docker-compose pull || {
-              echo "Error: Failed to pull images"
-              exit 1
-            }
-            
-            # Start services with force recreate
-            echo "Starting services..."
-            docker-compose up -d --force-recreate || {
-              echo "Error: Failed to start services"
+            # Build and start services
+            echo "Building and starting services..."
+            docker-compose up -d --build || {
+              echo "::error::Failed to start services"
               exit 1
             }
             
@@ -109,13 +101,11 @@ jobs:
             while [ $timeout -gt 0 ]; do
               dashboard_status=$(check_container $DASHBOARD_CONTAINER)
               caddy_status=$(check_container $CADDY_CONTAINER)
-              backend_status=$(check_container $BACKEND_CONTAINER)
               
-              echo "Status: Dashboard=$dashboard_status, Caddy=$caddy_status, Backend=$backend_status"
+              echo "Status: Dashboard=$dashboard_status, Caddy=$caddy_status"
               
               if [ "$dashboard_status" = "running" ] && \
-                 [ "$caddy_status" = "running" ] && \
-                 [ "$backend_status" = "running" ]; then
+                 [ "$caddy_status" = "running" ]; then
                 all_healthy=true
                 break
               fi
@@ -126,9 +116,6 @@ jobs:
               fi
               if [ "$caddy_status" = "restarting" ]; then
                 check_logs $CADDY_CONTAINER
-              fi
-              if [ "$backend_status" = "restarting" ]; then
-                check_logs $BACKEND_CONTAINER
               fi
               
               sleep 5
@@ -142,7 +129,6 @@ jobs:
               echo "=== Container Logs ==="
               check_logs $DASHBOARD_CONTAINER || true
               check_logs $CADDY_CONTAINER || true
-              check_logs $BACKEND_CONTAINER || true
               exit 1
             fi
             
@@ -170,4 +156,3 @@ jobs:
             echo "Deployment verification:"
             echo "- Dashboard status: $(check_container $DASHBOARD_CONTAINER)"
             echo "- Caddy status: $(check_container $CADDY_CONTAINER)"
-            echo "- Backend status: $(check_container $BACKEND_CONTAINER)"
