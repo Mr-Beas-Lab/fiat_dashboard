@@ -46,7 +46,7 @@ jobs:
             set -exo pipefail
 
             # Setup environment
-            DEPLOY_DIR="/home/million/glofica"
+            DEPLOY_DIR="/home/million/mrbeas/dashboard"
             LOG_FILE="/tmp/deploy_$(date +'%Y%m%d_%H%M%S').log"
 
             # Redirect output to log file
