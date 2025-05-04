@@ -5,6 +5,11 @@
 }
 
 wam.mrbeas.net {
+    # Enable automatic HTTPS
+    tls {
+        protocols tls1.2 tls1.3
+    }
+
     reverse_proxy dashboard:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote}

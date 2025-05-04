@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     networks:
       - dashboard_mrbeas_web_network
+      - app-network
     expose:
       - "3000"
     environment:
@@ -14,8 +15,10 @@ services:
       - PORT=3000
 
   caddy:
-    image: caddy:2-alpine
-    container_name: dashboard_caddy
+    build:
+      context: .
+      dockerfile: Dockerfile.caddy
+    container_name: caddy
     restart: unless-stopped
     ports:
       - "80:80"
@@ -24,17 +27,31 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
-      - caddy_logs:/var/log/caddy
+    environment:
+      - CLOUDFLARE_API_TOKEN=${CLOUDFLARE_API_TOKEN}
     networks:
-      - dashboard_mrbeas_web_network
+      - app-network
     depends_on:
       - dashboard
+
+  api:
+    image: millionmulugeta/api:latest
+    container_name: api
+    restart: unless-stopped
+    networks:
+      - app-network
+    expose:
+      - "5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
 
 volumes:
   caddy_data:
   caddy_config:
-  caddy_logs:
 
 networks:
+  app-network:
+    driver: bridge
   dashboard_mrbeas_web_network:
     driver: bridge
