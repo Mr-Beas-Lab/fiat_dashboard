@@ -45,31 +45,77 @@ jobs:
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASSWORD }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: 22
+          script_timeout: 300
           script: |
+            #!/bin/bash
             set -exo pipefail
-
-            echo "🔐 Connecting to server..."
-            cd /home/million/mrbeas/dashboard || { echo "❌ Directory not found"; exit 1; }
-
-            # Force-free ports 80/443 (improved version)
-            echo "🔍 Freeing ports 80 and 443..."
-            sudo ss -tulnp | grep -E ':(80|443)\s' | awk '{print $NF}' | cut -d ',' -f 2 | xargs -r sudo kill -9 2>/dev/null || true
-            sudo pkill -9 docker-proxy 2>/dev/null || true
-            sudo iptables -t nat -F
-            sudo systemctl restart docker
-            sleep 3
-
-            echo "⬇️ Pulling latest image..."
+            
+            # Setup environment
+            DEPLOY_DIR="/home/million/mrbeas/dashboard"
+            LOG_FILE="/tmp/deploy_$(date +%Y%m%d_%H%M%S).log"
+            
+            # Redirect all output to log file
+            exec > >(tee -a "$LOG_FILE") 2>&1
+            
+            echo "🔐 Starting deployment at $(date)"
+            
+            # Verify deployment directory exists
+            if [ ! -d "$DEPLOY_DIR" ]; then
+              echo "❌ Error: Deployment directory $DEPLOY_DIR not found"
+              exit 1
+            fi
+            
+            cd "$DEPLOY_DIR" || exit 1
+            
+            # Check for running containers using ports 80/443
+            echo "🔍 Checking for processes using ports 80/443..."
+            if sudo lsof -i :80 || sudo lsof -i :443; then
+              echo "🛑 Found processes using HTTP ports, stopping containers..."
+              docker-compose down --timeout 2 || true
+              
+              # Force stop any remaining processes
+              sudo fuser -k 80/tcp || true
+              sudo fuser -k 443/tcp || true
+              sleep 2
+            fi
+            
+            # Clean up Docker resources
+            echo "🧹 Cleaning up Docker resources..."
+            docker system prune -af || true
+            docker network prune -f || true
+            
+            # Pull the latest image
+            echo "⬇️ Pulling latest Docker image..."
             docker pull millionmulugeta/dashboard:latest
-
-            echo "🚀 Starting deployment..."
-            docker-compose down --remove-orphans
-            docker-compose up -d
-
-            echo "⏳ Waiting for services..."
-            sleep 30
-
-            echo "✅ Deployment successful"
+            
+            # Start deployment
+            echo "🚀 Starting containers..."
+            docker-compose up -d --remove-orphans
+            
+            # Health check
+            echo "🩺 Performing health checks..."
+            for i in {1..10}; do
+              if docker ps --filter "name=dashboard" --format "{{.Status}}" | grep -q "(healthy)"; then
+                break
+              fi
+              echo "⏳ Waiting for containers to be healthy (attempt $i/10)..."
+              sleep 10
+            done
+            
+            # Verify deployment
+            echo "✅ Deployment verification:"
             docker-compose ps
-            docker logs caddy_reverse_proxy --tail 20
+            
+            # Check Caddy logs
+            echo "📝 Caddy logs:"
+            docker logs caddy_reverse_proxy --tail 50
+            
+            # Final status
+            echo "🏁 Deployment completed successfully at $(date)"
+            echo "🔄 Container status:"
+            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+            
+            # Exit cleanly
+            exit 0
