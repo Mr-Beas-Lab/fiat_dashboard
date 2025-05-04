@@ -1,4 +1,4 @@
-# Global settings (development)
+# Global settings
 {
     email millionmulugeta01@gmail.com
     local_certs  # Use self-signed certificates for development
@@ -25,15 +25,4 @@ wam.mrbeas.net {
         resolvers 1.1.1.1
     }
 }
-
-# Backend API
-backend-dashboard.mrbeas.net {
-    reverse_proxy mrb_backend:3000 {
-        header_up Host {host}
-        header_up X-Real-IP {remote}
-    }
-    
-    tls internal {
-        resolvers 1.1.1.1
-    }
-}
+ 

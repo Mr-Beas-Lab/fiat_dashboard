@@ -14,18 +14,7 @@ services:
       - PORT=3000
       - VITE_API_URL=https://backend-dashboard.mrbeas.net
 
-  mrb_backend:
-    image: millionmulugeta/mrb_backend:latest
-    container_name: mrb_backend
-    restart: unless-stopped
-    networks:
-      - mrbeas_web_network
-    expose:
-      - "3000"
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-
+ 
   caddy:
     image: caddy:2-alpine
     container_name: caddy_reverse_proxy
@@ -41,7 +30,7 @@ services:
       - mrbeas_web_network
     depends_on:
       - dashboard
-      - mrb_backend
+ 
 
 volumes:
   caddy_data:
