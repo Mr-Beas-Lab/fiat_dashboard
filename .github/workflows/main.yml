@@ -49,78 +49,56 @@ jobs:
           port: 22
           timeout: 5m  # Proper duration format (5 minutes)
           command_timeout: 10m  # For individual commands
-          script: |
-            #!/bin/bash
+           script: |
             set -exo pipefail
-            
-            # Setup environment
-            DEPLOY_DIR="/home/million/mrbeas/dashboard"
-            LOG_FILE="/tmp/deploy_$(date +%Y%m%d_%H%M%S).log"
-            
-            # Redirect all output to log file
-            exec > >(tee -a "$LOG_FILE") 2>&1
-            
-            echo "🔐 Starting deployment at $(date)"
-            
-            # Verify deployment directory exists
-            if [ ! -d "$DEPLOY_DIR" ]; then
-              echo "❌ Error: Deployment directory $DEPLOY_DIR not found"
+
+            echo "🔐 Connecting to server..."
+            cd /home/million/mrbeas/dashboard || { echo "❌ Directory not found"; exit 1; }
+
+            # Force-free ports 80/443 (improved version)
+            echo "🔍 Freeing ports 80 and 443..."
+            sudo ss -tulnp | grep -E ':(80|443)\s' | awk '{print $NF}' | cut -d ',' -f 2 | xargs -r sudo kill -9 2>/dev/null || true
+            sudo pkill -9 docker-proxy 2>/dev/null || true
+            sudo iptables -t nat -F
+            sudo systemctl restart docker
+            sleep 3
+
+            # Verify .env file exists and is readable
+            if [ ! -f .env ]; then
+              echo "❌ .env file not found"
               exit 1
             fi
-            
-            cd "$DEPLOY_DIR" || exit 1
-            
-            # Handle sudo password
-            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S true
-            
-            # Check for running containers using ports 80/443
-            echo "🔍 Checking for processes using ports 80/443..."
-            if sudo lsof -i :80 || sudo lsof -i :443; then
-              echo "🛑 Found processes using HTTP ports, stopping containers..."
-              docker-compose down --timeout 2 || true
-              
-              # Force stop any remaining processes
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S pkill -9 docker-proxy || true
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S fuser -k 80/tcp || true
-              echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S fuser -k 443/tcp || true
-              sleep 2
-            fi
-            
-            # Clean up Docker resources
-            echo "🧹 Cleaning up Docker resources..."
-            docker system prune -af || true
-            docker network prune -f || true
-            
-            # Pull the latest image
-            echo "⬇️ Pulling latest Docker image..."
-            docker pull millionmulugeta/dashboard:latest
-            
-            # Start deployment
-            echo "🚀 Starting containers..."
-            docker-compose up -d --remove-orphans
-            
-            # Health check
-            echo "🩺 Performing health checks..."
-            for i in {1..10}; do
-              if docker ps --filter "name=dashboard" --format "{{.Status}}" | grep -q "(healthy)"; then
-                break
-              fi
-              echo "⏳ Waiting for containers to be healthy (attempt $i/10)..."
-              sleep 10
-            done
-            
-            # Verify deployment
-            echo "✅ Deployment verification:"
+
+            # Fix .env file format
+            echo "📝 Fixing .env file format..."
+            # Convert CRLF to LF and remove any BOM
+            sed -i 's/\r$//' .env
+            # Remove any empty lines and comments
+            sed -i '/^$/d;/^#/d' .env
+            # Ensure each line ends with a newline
+            sed -i -e '$a\' .env
+
+            # Load environment variables safely
+            echo "📝 Loading environment variables..."
+            while IFS='=' read -r key value; do
+              # Skip empty lines
+              [ -z "$key" ] && continue
+              # Remove any quotes and trailing spaces
+              value=$(echo "$value" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' -e 's/^["\x27]//' -e 's/["\x27]$//')
+              # Export the variable
+              export "$key=$value"
+            done < .env
+
+            echo "⬇️ Pulling latest image..."
+            docker pull millionmulugeta/api:latest
+
+            echo "🚀 Starting deployment..."
+            docker-compose down --remove-orphans
+            docker-compose up -d
+
+            echo "⏳ Waiting for services..."
+            sleep 30
+
+            echo "✅ Deployment successful"
             docker-compose ps
-            
-            # Check Caddy logs
-            echo "📝 Caddy logs:"
-            docker logs caddy_reverse_proxy --tail 50
-            
-            # Final status
-            echo "🏁 Deployment completed successfully at $(date)"
-            echo "🔄 Container status:"
-            docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
-            
-            # Exit cleanly
-            exit 0
+            docker logs caddy --tail 20
