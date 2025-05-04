@@ -37,5 +37,5 @@ jobs:
           port: 22
           script: |
             docker pull millionmulugeta/dashboard:latest
-            docker stop dashboard || true && docker rm dashboard || true
+            docker rm -f dashboard || true
             docker run -d --name dashboard -p 80:80 millionmulugeta/dashboard:latest
