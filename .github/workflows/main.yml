@@ -36,6 +36,7 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
           script: |
+            cd ~/mrbeas/dashboard
+            docker compose down
             docker pull millionmulugeta/dashboard:latest
-            docker rm -f dashboard || true
-            docker run -d --name dashboard -p 80:80 millionmulugeta/dashboard:latest
+            docker compose up -d
