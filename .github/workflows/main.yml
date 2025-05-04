@@ -60,22 +60,52 @@ jobs:
             # Ensure all services are up (including Caddy)
             docker-compose up -d
             
-            # Wait for Caddy to be fully running
-            echo "Waiting for Caddy to be ready..."
-            timeout=30
+            # Function to check container logs
+            check_logs() {
+              echo "=== $1 Container Logs ==="
+              docker logs $1
+              echo "========================"
+            }
+            
+            # Wait for services to be fully running
+            echo "Waiting for services to be ready..."
+            timeout=60
             while [ $timeout -gt 0 ]; do
-              if docker ps | grep -q "caddy_reverse_proxy.*Up"; then
-                echo "Caddy is running!"
+              if docker ps | grep -q "caddy_reverse_proxy.*Up" && \
+                 docker ps | grep -q "dashboard.*Up" && \
+                 docker ps | grep -q "mrb_backend.*Up"; then
+                echo "All services are running!"
                 break
               fi
-              sleep 1
-              timeout=$((timeout-1))
+              
+              # Check logs if containers are restarting
+              if docker ps | grep -q "caddy_reverse_proxy.*Restarting"; then
+                check_logs caddy_reverse_proxy
+              fi
+              if docker ps | grep -q "dashboard.*Restarting"; then
+                check_logs dashboard
+              fi
+              if docker ps | grep -q "mrb_backend.*Restarting"; then
+                check_logs mrb_backend
+              fi
+              
+              sleep 2
+              timeout=$((timeout-2))
             done
             
             if [ $timeout -eq 0 ]; then
-              echo "Timeout waiting for Caddy to start"
+              echo "Timeout waiting for services to start"
+              echo "=== Final Container Status ==="
+              docker ps -a
+              echo "=== Container Logs ==="
+              check_logs caddy_reverse_proxy
+              check_logs dashboard
+              check_logs mrb_backend
               exit 1
             fi
+            
+            # Additional wait to ensure services are stable
+            sleep 5
             
             # Reload Caddy configuration
             docker exec caddy_reverse_proxy caddy reload
