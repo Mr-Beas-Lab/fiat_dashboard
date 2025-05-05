@@ -17,6 +17,14 @@ export default defineConfig({
     sourcemap: true,
     outDir: 'dist',
     assetsDir: 'assets',
+    rollupOptions: {
+      output: {
+        assetFileNames: (assetInfo) => {
+          if (assetInfo.name === 'style.css') return 'output.css';
+          return 'assets/[name]-[hash][extname]';
+        },
+      },
+    },
   },
   server: {
     // Disable HMR in production

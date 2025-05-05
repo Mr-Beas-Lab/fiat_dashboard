@@ -19,6 +19,9 @@ wam.mrbeas.net {
     handle @static {
         reverse_proxy dashboard:3000 {
             header_down Content-Type {http.reverse_proxy.content_type}
+            header_down +Content-Type "text/css" {
+                path *.css
+            }
         }
     }
 
