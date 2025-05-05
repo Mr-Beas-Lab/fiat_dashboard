@@ -44,7 +44,7 @@ export default defineConfig({
       'dashboard',  
       '127.0.0.1'
     ],
-    // Add these headers to ensure proper proxy handling
+    //  headers to ensure proper proxy handling
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
