@@ -2,7 +2,6 @@
 {
     debug
     email millionmulugeta01@gmail.com
-    acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
 }
 
 wam.mrbeas.net {
@@ -12,17 +11,13 @@ wam.mrbeas.net {
     }
     tls millionmulugeta01@gmail.com
 
-    # Handle static assets first
+    # Handle static assets first with proper MIME types
     @static {
         path /assets/* /output.css /vite.svg *.js *.css
     }
     handle @static {
-        reverse_proxy dashboard:3000 {
-            header_down Content-Type {http.reverse_proxy.content_type}
-            header_down +Content-Type "text/css" {
-                path *.css
-            }
-        }
+        reverse_proxy dashboard:3000
+        header_down Content-Type {http.reverse_proxy.content_type}
     }
 
     # Reverse proxy all other requests
