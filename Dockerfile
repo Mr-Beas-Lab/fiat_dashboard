@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY package.json package-lock.json ./ 
+COPY package.json package-lock.json ./
 
 # Install dependencies
 RUN npm ci
@@ -20,8 +20,8 @@ FROM nginx:alpine
 # Copy the built app to the Nginx container
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy the custom Nginx config (you will need to add this)
-COPY ./nginx.conf /etc/nginx/nginx.conf
+# ✅ Copy the proper Nginx site config 
+COPY ./nginx-site.conf /etc/nginx/conf.d/default.conf
 
 # Expose ports
 EXPOSE 80 443
