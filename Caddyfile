@@ -11,8 +11,18 @@ wam.mrbeas.net {
         protocols tls1.2 tls1.3
     }
     tls millionmulugeta01@gmail.com
-    
-    # Reverse proxy to your dashboard app on port 3000
+
+    # Handle static assets first
+    @static {
+        path /assets/* /output.css /vite.svg *.js *.css
+    }
+    handle @static {
+        reverse_proxy dashboard:3000 {
+            header_down Content-Type {http.reverse_proxy.content_type}
+        }
+    }
+
+    # Reverse proxy all other requests
     reverse_proxy dashboard:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
