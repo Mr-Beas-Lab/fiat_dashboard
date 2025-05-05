@@ -8,7 +8,7 @@ COPY package.json package-lock.json ./
 # Install dependencies
 RUN npm ci
 
-# Copy all source files (excluding what's in .dockerignore)
+# Copy all source files
 COPY . .
 
 # Build the application
@@ -21,9 +21,9 @@ WORKDIR /app
 # Copy production files from builder
 COPY --from=builder /app/dist ./dist/
 COPY --from=builder /app/node_modules ./node_modules/
-COPY --from=builder /app/package.json .
-COPY --from=builder /app/vite.config.ts .
-COPY --from=builder /app/tsconfig.json .
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/vite.config.ts ./vite.config.ts
+COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 # Environment variables
 ENV NODE_ENV=production
@@ -37,4 +37,4 @@ HEALTHCHECK --interval=30s --timeout=3s \
 EXPOSE 3000
 
 # Run Vite preview server with explicit host binding
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "3000", "--config", "vite.config.ts"]
