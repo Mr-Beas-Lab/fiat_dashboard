@@ -1,39 +1,29 @@
 version: '3.8'
 
 services:
-  dashboard:
+  app:
     image: millionmulugeta/dashboard:latest
     container_name: dashboard
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=production
-      - PORT=3000
-    expose:
-      - "3000"
+    ports:
+      - "8080:8080"
+    restart: always
     networks:
-      - web_network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000"]
-      interval: 30s
-      timeout: 3s
-      retries: 3
+      - vite-net
 
   nginx:
     image: nginx:alpine
-    container_name: nginx
+    container_name: vite-nginx
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
-      - /etc/ssl/certs:/etc/ssl/certs
-      - /etc/ssl/private:/etc/ssl/private
+      - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
-      dashboard:
-        condition: service_healthy
+      - app
     networks:
-      - web_network
+      - vite-net
 
 networks:
-  web_network:
+  vite-net:
     driver: bridge
