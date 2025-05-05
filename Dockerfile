@@ -1,34 +1,32 @@
-# Stage 1: Build stage
-FROM node:20-alpine AS builder
+# Stage 1: Build the Vite app
+FROM node:20-alpine as BUILD_IMAGE
+
+LABEL name="dashboard"
+
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY package.json package-lock.json ./
+COPY package.json .
+COPY package-lock.json* .
 
 # Install dependencies
-RUN npm ci
+RUN npm install
 
-# Copy all source files
+# Copy all files and build
 COPY . .
+RUN npm run build 
 
-# Build the application
-RUN npm run build
-
-# Stage 2: Production stage with Nginx
+# Stage 2: Production image with Nginx
 FROM nginx:alpine
 
-# Copy the built app to the Nginx container
-COPY --from=builder /app/dist /usr/share/nginx/html
+# Copy built assets from builder stage
+COPY --from=BUILD_IMAGE /app/dist /usr/share/nginx/html
 
-# ✅ Copy the proper Nginx site config 
-COPY ./nginx-site.conf /etc/nginx/conf.d/default.conf
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
-# Expose ports
-EXPOSE 80 443
+# Expose port 80
+EXPOSE 80
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost || exit 1
-
-# Start Nginx in the foreground
+# Start Nginx
 CMD ["nginx", "-g", "daemon off;"]

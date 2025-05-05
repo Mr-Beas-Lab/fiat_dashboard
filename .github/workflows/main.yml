@@ -27,6 +27,8 @@ jobs:
           context: .
           push: true
           tags: millionmulugeta/dashboard:latest
+          cache-from: type=registry,ref=millionmulugeta/dashboard:buildcache
+          cache-to: type=registry,ref=millionmulugeta/dashboard:buildcache,mode=max
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -36,6 +38,21 @@ jobs:
           password: ${{ secrets.SERVER_PASSWORD }}
           port: 22
           script: |
-            docker pull millionmulugeta/dashboard:latest
+            # Pull the latest image
+            docker pull millionmulugeta/dashboard:latest || exit 1
+            
+            # Stop and remove the existing container if it exists
             docker rm -f dashboard || true
-            docker run -d --name dashboard -p 3000:3000 millionmulugeta/dashboard:latest
+            
+            # Run the new container with proper error handling
+            docker run -d \
+              --name dashboard \
+              --restart unless-stopped \
+              -p 80:80 \
+              millionmulugeta/dashboard:latest || exit 1
+            
+            # Verify the container is running
+            docker ps | grep dashboard || exit 1
+            
+            # Clean up old images
+            docker image prune -f
