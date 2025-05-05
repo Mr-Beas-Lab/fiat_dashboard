@@ -3,7 +3,7 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Copy package files first for better caching
-COPY package.json package-lock.json ./
+COPY package.json package-lock.json ./ 
 
 # Install dependencies
 RUN npm ci
@@ -14,27 +14,21 @@ COPY . .
 # Build the application
 RUN npm run build
 
-# Stage 2: Production stage
-FROM node:20-alpine
-WORKDIR /app
+# Stage 2: Production stage with Nginx
+FROM nginx:alpine
 
-# Copy production files from builder
-COPY --from=builder /app/dist ./dist/
-COPY --from=builder /app/node_modules ./node_modules/
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/vite.config.ts ./vite.config.ts
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
+# Copy the built app to the Nginx container
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Environment variables
-ENV NODE_ENV=production
-ENV HOST=0.0.0.0
-ENV PORT=3000
+# Copy the custom Nginx config (you will need to add this)
+COPY ./nginx.conf /etc/nginx/nginx.conf
+
+# Expose ports
+EXPOSE 80 443
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s \
-  CMD curl -f http://localhost:3000 || exit 1
+  CMD curl -f http://localhost || exit 1
 
-EXPOSE 3000
-
-# Run Vite preview server with explicit host binding
-CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "3000", "--config", "vite.config.ts"]
+# Start Nginx in the foreground
+CMD ["nginx", "-g", "daemon off;"]

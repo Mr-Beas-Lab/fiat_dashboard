@@ -7,39 +7,25 @@ services:
     restart: unless-stopped
     networks:
       - web_network
+    ports:
+      - "3000:3000"
 
-    expose:
-      - "3000"
-
-    environment:
-      - NODE_ENV=production
-
-
-  caddy:
-    build:
-      context: .
-      dockerfile: Dockerfile.caddy
-    container_name: caddy
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
-
+      - /etc/nginx/sites-enabled:/etc/nginx/conf.d
+      - /etc/ssl:/etc/ssl
+      - /var/www:/var/www
     networks:
       - web_network
     depends_on:
       - dashboard
 
-
-volumes:
-  caddy_data:
-  caddy_config:
-
 networks:
   web_network:
     driver: bridge
-    name: dashboard_web_network

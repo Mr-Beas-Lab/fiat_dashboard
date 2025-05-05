@@ -17,14 +17,6 @@ export default defineConfig({
     sourcemap: true,
     outDir: 'dist',
     assetsDir: 'assets',
-    rollupOptions: {
-      output: {
-        assetFileNames: (assetInfo) => {
-          if (assetInfo.name === 'style.css') return 'output.css';
-          return 'assets/[name]-[hash][extname]';
-        },
-      },
-    },
   },
   server: {
     // Disable HMR in production
@@ -44,7 +36,7 @@ export default defineConfig({
       'dashboard',  
       '127.0.0.1'
     ],
-    //  headers to ensure proper proxy handling
+    // Add these headers to ensure proper proxy handling
     headers: {
       "Access-Control-Allow-Origin": "*",
       "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
