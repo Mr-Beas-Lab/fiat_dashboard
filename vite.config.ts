@@ -32,6 +32,6 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     host: '0.0.0.0',
-    allowedHosts: ['wam.mrbeas.net'],
+    allowedHosts: ['wam.mrbeas.net','mrbeas.net','localhost','127.0.0.1'],
   },
 });
