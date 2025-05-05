@@ -2,6 +2,7 @@
 {
     debug
     email millionmulugeta01@gmail.com
+    acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
 }
 
 wam.mrbeas.net {
@@ -10,11 +11,11 @@ wam.mrbeas.net {
         protocols tls1.2 tls1.3
     }
     tls millionmulugeta01@gmail.com
+    
     # Reverse proxy to your dashboard app on port 3000
     reverse_proxy dashboard:3000 {
         header_up Host {host}
         header_up X-Real-IP {remote_host}
-        header_up X-Forwarded-Proto {scheme}
     }
 
     # Set security headers

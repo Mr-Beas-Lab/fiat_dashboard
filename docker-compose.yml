@@ -42,3 +42,4 @@ volumes:
 networks:
   web_network:
     driver: bridge
+    name: dashboard_web_network

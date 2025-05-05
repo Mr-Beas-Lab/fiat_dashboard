@@ -1,42 +1,40 @@
-# Stage 1: Build
+# Stage 1: Build stage
 FROM node:20-alpine AS builder
 WORKDIR /app
 
-# 1. Copy package files first for better layer caching
+# Copy package files first for better caching
 COPY package.json package-lock.json ./
 
-# 2. Install dependencies (clean install)
+# Install dependencies
 RUN npm ci
 
-# 3. Copy all files except those in .dockerignore
+# Copy all source files (excluding what's in .dockerignore)
 COPY . .
 
-# 4. Set build environment variables
-ENV NODE_ENV=production
-ENV VITE_API_URL=${VITE_API_URL:-http://localhost:8000}
+# Build the application
+RUN npm run build
 
-# 5. Install TypeScript globally (if needed for your project)
-RUN npm install -g typescript
-
-# 6. Run the build process (TypeScript compile + Vite build)
-RUN NODE_OPTIONS="--max-old-space-size=4096" npm run build
-
-# Stage 2: Production
+# Stage 2: Production stage
 FROM node:20-alpine
 WORKDIR /app
 
-# 1. Copy built assets from builder
-COPY --from=builder /app/dist ./dist
+# Copy production files from builder
+COPY --from=builder /app/dist ./dist/
+COPY --from=builder /app/node_modules ./node_modules/
+COPY --from=builder /app/package.json .
+COPY --from=builder /app/vite.config.ts .
+COPY --from=builder /app/tsconfig.json .
 
-# 2. Copy production package files
-COPY --from=builder /app/package.json ./package.json
-COPY --from=builder /app/package-lock.json ./package-lock.json
+# Environment variables
+ENV NODE_ENV=production
+ENV HOST=0.0.0.0
+ENV PORT=3000
 
-# 3. Install only production dependencies
-RUN npm ci --omit=dev
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD curl -f http://localhost:3000 || exit 1
 
-# 4. Expose port
 EXPOSE 3000
 
-# 5. Run Vite preview (matches your package.json script)
-CMD ["npm", "run", "preview", "--", "--host", "0.0.0.0", "--port", "3000"]
+# Run Vite preview server with explicit host binding
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "3000"]

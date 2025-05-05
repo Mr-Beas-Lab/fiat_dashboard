@@ -33,7 +33,7 @@ export default defineConfig({
     allowedHosts: [
       'wam.mrbeas.net',
       'localhost',
-      'dashboard',  // Add container name as allowed host
+      'dashboard',  
       '127.0.0.1'
     ],
     // Add these headers to ensure proper proxy handling
