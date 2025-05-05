@@ -19,19 +19,28 @@ export default defineConfig({
     assetsDir: 'assets',
   },
   server: {
-    host: '0.0.0.0',
-    port: 3000,
-    strictPort: true,
-    hmr: {
+    // Disable HMR in production
+    hmr: process.env.NODE_ENV === 'development' ? {
       protocol: 'wss',
       host: 'wam.mrbeas.net',
       clientPort: 443
-    },
+    } : false
   },
   preview: {
+    host: '0.0.0.0',
     port: 3000,
     strictPort: true,
-    host: '0.0.0.0',
-    allowedHosts: ['wam.mrbeas.net','mrbeas.net','localhost','127.0.0.1'],
+    allowedHosts: [
+      'wam.mrbeas.net',
+      'localhost',
+      'dashboard',  // Add container name as allowed host
+      '127.0.0.1'
+    ],
+    // Add these headers to ensure proper proxy handling
+    headers: {
+      "Access-Control-Allow-Origin": "*",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
+    }
   },
 });

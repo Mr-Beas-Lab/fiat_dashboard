@@ -8,9 +8,12 @@ services:
     networks:
       - web_network
 
+    expose:
+      - "3000"
+
     environment:
       - NODE_ENV=production
-      - PORT=3000
+
 
   caddy:
     build:
