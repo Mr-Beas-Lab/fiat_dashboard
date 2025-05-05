@@ -19,7 +19,7 @@ services:
       - "443:443"
     volumes:
       - /etc/nginx/sites-enabled:/etc/nginx/conf.d
-      - /etc/ssl:/etc/ssl
+      - /etc/ssl:/etc/ssl  # Mount SSL certificates
       - /var/www:/var/www
     networks:
       - web_network
